@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const yaml = require('../vendor/js-yaml-3.15.1.min.js');
+const yaml = require('../vendor/js-yaml-3.15.2.min.js');
 const {
   assertContainedPath,
   ensureContainedDirectory,

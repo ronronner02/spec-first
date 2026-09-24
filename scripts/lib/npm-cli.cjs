@@ -13,7 +13,7 @@ function getEnvValue(env, name) {
 
 function selectPathApi(filePath) {
   const value = String(filePath || '');
-  return /^[A-Za-z]:[\\/]/.test(value) || value.includes('\\') ? path.win32 : path;
+  return /^[A-Za-z]:[\\/]/.test(value) || value.includes('\\') ? path.win32 : path.posix;
 }
 
 function resolveNpmCliPath(options = {}) {

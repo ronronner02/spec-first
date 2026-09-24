@@ -615,6 +615,10 @@ function applyOperationPlan(projectRoot, plan) {
   }
 
   const projectRootReal = fs.realpathSync.native(path.resolve(projectRoot));
+  // 先校验完整计划，避免后续越界目标被发现时前面的合法文件已经删除。
+  for (const operation of plan.operations) {
+    assertOperationTargetContained(projectRootReal, resolveOperationTarget(projectRoot, operation), operation);
+  }
   for (const operation of plan.operations) {
     const targetPath = resolveOperationTarget(projectRoot, operation);
     assertOperationTargetContained(projectRootReal, targetPath, operation);

@@ -59,10 +59,18 @@ function cleanupAtomicTempPath(tmpPath, primaryError = null) {
 }
 
 function writeFileAtomic(filePath, contents, encoding = 'utf8') {
+  let previousMode;
+  try {
+    previousMode = fs.statSync(filePath).mode & 0o777;
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const tmpPath = createAtomicTempPath(filePath);
   try {
-    fs.writeFileSync(tmpPath, contents, encoding);
+    fs.writeFileSync(tmpPath, contents, { encoding, flag: 'wx', ...(previousMode === undefined ? {} : { mode: previousMode }) });
+    // rename 会替换 inode；必须在替换前保留原配置的权限，避免 0600 变成默认 0644。
+    if (previousMode !== undefined) fs.chmodSync(tmpPath, previousMode);
     renameWithWindowsRetry(tmpPath, filePath);
   } catch (error) {
     cleanupAtomicTempPath(tmpPath, error);

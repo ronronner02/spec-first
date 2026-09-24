@@ -1,6 +1,8 @@
 'use strict';
 
 module.exports = {
+  globalSetup: '<rootDir>/tests/global-setup.cjs',
+  globalTeardown: '<rootDir>/tests/global-teardown.cjs',
   setupFiles: ['<rootDir>/tests/jest-setup.js'],
   modulePathIgnorePatterns: [
     '<rootDir>/.worktrees/',

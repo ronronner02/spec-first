@@ -19,6 +19,22 @@ afterEach(() => {
 });
 
 describe('atomic write failure evidence', () => {
+  test('替换配置文件前保留原有访问权限', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'spec-first-atomic-mode-'));
+    tempRoots.push(root);
+    const targetPath = path.join(root, 'settings.json');
+    fs.writeFileSync(targetPath, '{}');
+    const originalStat = fs.statSync(targetPath);
+    jest.spyOn(fs, 'statSync').mockImplementation((filePath) => {
+      if (filePath === targetPath) return { ...originalStat, mode: 0o100600 };
+      return originalStat;
+    });
+    const chmod = jest.spyOn(fs, 'chmodSync');
+    writeFileAtomic(targetPath, '{"changed":true}');
+    expect(chmod).toHaveBeenCalledWith(expect.stringContaining('.settings.json.'), 0o600);
+    expect(fs.readFileSync(targetPath, 'utf8')).toBe('{"changed":true}');
+  });
+
   test.each([
     ['writeFileAtomic', writeFileAtomic],
     ['writeFileAtomicIfAbsent', writeFileAtomicIfAbsent],
