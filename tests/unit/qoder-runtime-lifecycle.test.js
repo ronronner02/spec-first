@@ -70,7 +70,27 @@ function writeFinalizeScript(projectRoot, contents) {
   );
 }
 
-function runReadinessHook(projectRoot, payload = {}) {
+function runReadinessHook(projectRoot, payload = {}, writtenPaths = []) {
+  const source = path.resolve(__dirname, '../../skills/spec-prd/scripts/lib/hook-session-scope.cjs');
+  writeText(path.join(projectRoot, '.qoder/skills/spec-prd/scripts/lib/hook-session-scope.cjs'), fs.readFileSync(source));
+  if (writtenPaths.length > 0) {
+    const sessionId = 'qoder-fixture-session';
+    const records = [{ uuid: 'prompt', parentUuid: null, sessionId, type: 'user', message: { content: '完善本次 PRD。' } }];
+    let parentUuid = 'prompt';
+    writtenPaths.forEach((relative, index) => {
+      const callId = `write-${index}`;
+      records.push({ uuid: callId, parentUuid, sessionId, cwd: projectRoot, type: 'assistant', message: { content: [{
+        type: 'tool_use', id: callId, name: 'Write', input: { file_path: relative, content: fs.readFileSync(path.join(projectRoot, relative), 'utf8') },
+      }] } });
+      parentUuid = `result-${index}`;
+      records.push({ uuid: parentUuid, parentUuid: callId, sessionId, type: 'user', message: { content: [{
+        type: 'tool_result', tool_use_id: callId, content: '完成',
+      }] } });
+    });
+    const transcript = path.join(projectRoot, 'transcript.jsonl');
+    writeText(transcript, records.map((record) => JSON.stringify(record)).join('\n'));
+    payload = { session_id: sessionId, transcript_path: transcript, ...payload };
+  }
   return spawnSync(process.execPath, [READINESS_HOOK_PATH], {
     cwd: projectRoot,
     input: JSON.stringify({ cwd: projectRoot, ...payload }),
@@ -563,13 +583,13 @@ describe('Qoder runtime lifecycle', () => {
     expect(result.stderr).toBe('');
   });
 
-  test('Qoder readiness hook blocks when git status is unavailable', () => {
+  test('Qoder 缺少当前回合证据时不因 Git 不可用而阻止结束', () => {
     const projectRoot = tempProject();
 
     const result = runReadinessHook(projectRoot);
 
-    expect(result.status).toBe(2);
-    expect(result.stderr).toContain('reason_codes: git_status_unavailable');
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain('prd_scope_payload_missing');
     expect(result.stderr).not.toContain(projectRoot);
   });
 
@@ -578,7 +598,7 @@ describe('Qoder runtime lifecycle', () => {
     initGitProject(projectRoot);
     writeReadyPrd(projectRoot, 'docs/brainstorms/sample-requirements.md');
 
-    const result = runReadinessHook(projectRoot);
+    const result = runReadinessHook(projectRoot, {}, ['docs/brainstorms/sample-requirements.md']);
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('docs/brainstorms/sample-requirements.md');
@@ -598,7 +618,7 @@ describe('Qoder runtime lifecycle', () => {
       '',
     ].join('\n'));
 
-    const result = runReadinessHook(projectRoot);
+    const result = runReadinessHook(projectRoot, {}, ['docs/brainstorms/sample-requirements.md']);
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('docs/brainstorms/sample-requirements.md');
@@ -623,7 +643,7 @@ describe('Qoder runtime lifecycle', () => {
       '',
     ].join('\n'));
 
-    const result = runReadinessHook(projectRoot);
+    const result = runReadinessHook(projectRoot, {}, ['docs/brainstorms/sample-requirements.md']);
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
@@ -635,7 +655,7 @@ describe('Qoder runtime lifecycle', () => {
     writeReadyPrd(projectRoot, 'docs/brainstorms/sample-requirements.md');
     writeFinalizeScript(projectRoot, 'process.exit(0);\n');
 
-    const result = runReadinessHook(projectRoot);
+    const result = runReadinessHook(projectRoot, {}, ['docs/brainstorms/sample-requirements.md']);
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
@@ -653,7 +673,7 @@ describe('Qoder runtime lifecycle', () => {
       '',
     ].join('\n'));
 
-    const result = runReadinessHook(projectRoot);
+    const result = runReadinessHook(projectRoot, {}, ['docs/brainstorms/sample-requirements.md']);
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('reason_codes: prd_hash_mismatch, source_inputs_missing');
@@ -667,7 +687,7 @@ describe('Qoder runtime lifecycle', () => {
     runGit(projectRoot, ['commit', '-m', 'test: add old prd']);
     runGit(projectRoot, ['mv', 'docs/brainstorms/old-requirements.md', 'docs/brainstorms/new-requirements.md']);
 
-    const result = runReadinessHook(projectRoot);
+    const result = runReadinessHook(projectRoot, {}, ['docs/brainstorms/new-requirements.md']);
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('docs/brainstorms/new-requirements.md');
@@ -686,7 +706,7 @@ describe('Qoder runtime lifecycle', () => {
     );
     runGit(projectRoot, ['add', 'docs/brainstorms/copy-requirements.md']);
 
-    const result = runReadinessHook(projectRoot);
+    const result = runReadinessHook(projectRoot, {}, ['docs/brainstorms/copy-requirements.md']);
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('docs/brainstorms/copy-requirements.md');

@@ -21,6 +21,8 @@ Experimental analysis profile: only the exact invocation token `analysis_profile
 
 Runtime mutation guard: the LLM owns final intent (`write_mode: final-prd`, `can_enter_spec_plan: yes`, and the semantic readiness outcome); `finalize-prd-artifact.js` alone owns `status: ready-for-planning` and `readiness_*` receipt fields. Managed Claude installs `prd-prewrite-guard` for `Write|Edit|MultiEdit`: it requires a durable `write_mode` on the first PRD write and blocks direct machine-field mutation, including degraded Edit/MultiEdit reconstruction that still touches those fields. Claude is the only host with confirmed managed hard enforcement for this path. Qoder hook projection is present but activation remains unverified. Codex, Cursor, and Kiro remain loud degraded and rely on explicit producer-finalize discipline; never imply equal hard protection. The Stop/readiness guard treats final intent without a current receipt as blocking, so allowing the LLM to persist intent does not allow closeout.
 
+Stop 检查仅消费当前真实用户回合、当前消息分支中的成功 `Write` / `Edit` / `MultiEdit` 回执，并核对磁盘内容是否仍一致；不再扫描整个 Git 工作区。既有 dirty/untracked PRD、上一回合修改和内容已被其他会话改写的文件都不自动归属本任务。`stop_hook_active` 时直接放行，避免重复阻止结束。缺少会话标识、可读取的 transcript、完整回执或当前回合窗口时只报告降级；Shell 写入、压缩前历史及未知宿主记录格式仍需显式执行 producer-local finalize，不能将 Stop 放行视为 readiness 通过。等待用户决策时应如实报告未完成项并结束，hook 不是切换流程或写入其他文件的授权。
+
 ## Workflow Contract Summary
 
 ### When To Use

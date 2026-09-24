@@ -107,14 +107,56 @@ function runPrewrite(host, projectRoot, payload) {
   });
 }
 
-function runReadiness(host, projectRoot) {
+function runReadiness(host, projectRoot, payload = {}) {
   const config = HOSTS[host];
+  const scopeSource = path.join(REPO_ROOT, 'skills/spec-prd/scripts/lib/hook-session-scope.cjs');
+  if (fs.existsSync(scopeSource)) {
+    write(path.join(path.dirname(path.join(projectRoot, config.finalizeRelative)), 'lib/hook-session-scope.cjs'),
+      fs.readFileSync(scopeSource, 'utf8'));
+  }
   return spawnSync(process.execPath, [config.readiness], {
     cwd: projectRoot,
-    input: '{}',
+    input: JSON.stringify(payload),
     encoding: 'utf8',
     env: { ...process.env, [config.envKey]: projectRoot },
   });
+}
+
+function transcriptPayload(projectRoot, turns, overrides = {}) {
+  const sessionId = 'session-a';
+  const records = [];
+  let parentUuid = null;
+  const add = (record) => {
+    const uuid = `event-${records.length}`;
+    records.push({ sessionId, cwd: projectRoot, uuid, parentUuid, ...record });
+    parentUuid = uuid;
+  };
+  for (const turn of turns) {
+    add({ type: 'user', message: { role: 'user', content: turn.prompt || '审阅项目，仅提供建议。' } });
+    for (const mutation of turn.writes || []) {
+      const toolId = `tool-${records.length}`;
+      add({ type: 'assistant', message: { role: 'assistant', content: [{
+        type: 'tool_use', id: toolId, name: mutation.tool || 'Write',
+        input: mutation.input || { file_path: mutation.path, content: mutation.content },
+      }] } });
+      add({ type: 'user', toolUseResult: mutation.result || {}, message: { role: 'user', content: [{
+        type: 'tool_result', tool_use_id: toolId, is_error: mutation.failed === true, content: '完成',
+      }] } });
+    }
+    if (turn.meta) add({ type: 'user', isMeta: true, message: { role: 'user', content: turn.meta } });
+    add({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: '审阅完成，等待你的选择。' }] } });
+  }
+  const transcriptPath = path.join(projectRoot, 'session.jsonl');
+  write(transcriptPath, records.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+  return { session_id: sessionId, transcript_path: transcriptPath, ...overrides };
+}
+
+function failingFinalize(host, projectRoot) {
+  write(path.join(projectRoot, HOSTS[host].finalizeRelative), [
+    "process.stdout.write(JSON.stringify({ blocking_reason_codes: ['ready_receipt_stale'] }));",
+    'process.exit(1);',
+    '',
+  ].join('\n'));
 }
 
 function readinessDecision(host, result) {
@@ -289,13 +331,12 @@ describe('spec-prd Claude and Qoder hook parity', () => {
     }
   });
 
-  test.each(Object.keys(HOSTS))('%s readiness hook fails closed when git status is unavailable', (host) => {
+  test.each(Object.keys(HOSTS))('%s 没有当前回合写入证据时不因 Git 状态缺失而阻止结束', (host) => {
     const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), `spec-prd-${host}-git-failure-`));
     try {
       const decision = readinessDecision(host, runReadiness(host, projectRoot));
 
-      expect(decision.blocked).toBe(true);
-      expect(decision.message).toContain('git_status_unavailable');
+      expect(decision.blocked).toBe(false);
     } finally {
       fs.rmSync(projectRoot, { recursive: true, force: true });
     }
@@ -332,7 +373,10 @@ describe('spec-prd Claude and Qoder hook parity', () => {
         '',
       ].join('\n'));
 
-      const decision = readinessDecision(host, runReadiness(host, projectRoot));
+      const payload = transcriptPayload(projectRoot, [{ writes: [{
+        path: newPath, content: fs.readFileSync(path.join(projectRoot, newPath), 'utf8'),
+      }] }]);
+      const decision = readinessDecision(host, runReadiness(host, projectRoot, payload));
 
       expect(decision.blocked).toBe(true);
       expect(decision.message).toContain(newPath);
@@ -348,5 +392,118 @@ describe('spec-prd Claude and Qoder hook parity', () => {
     expect(skill).toContain('Claude is the only host with confirmed managed hard enforcement');
     expect(skill).toContain('Qoder hook projection is present but activation remains unverified');
     expect(skill).toContain('Codex, Cursor, and Kiro remain loud degraded');
+  });
+});
+
+describe.each(Object.keys(HOSTS))('%s 当前回合 PRD 归属与结束边界', (host) => {
+  let root;
+  const relative = 'docs/brainstorms/sample-requirements.md';
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'spec-prd-turn-scope-'));
+    initGit(root);
+    write(path.join(root, relative), readyPrd());
+    failingFinalize(host, root);
+  });
+  afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  test.each(['untracked', 'dirty', 'staged'])('只读审阅不接管既有 %s PRD', (state) => {
+    if (state !== 'untracked') {
+      runGit(root, ['add', relative]);
+      runGit(root, ['commit', '-qm', 'test: baseline']);
+      write(path.join(root, relative), readyPrd().replace('Body v1', '历史修改'));
+      if (state === 'staged') runGit(root, ['add', relative]);
+    }
+    const payload = transcriptPayload(root, [{}]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test('同一会话上一回合写过 PRD，不阻止新的只读任务', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd() }] }, {}]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test('当前回合成功写入的 final PRD 仍校验真实凭据', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd() }] }]);
+    const decision = readinessDecision(host, runReadiness(host, root, payload));
+    expect(decision.blocked).toBe(true);
+    expect(decision.message).toContain('ready_receipt_stale');
+    expect(decision.message).not.toContain('return to `spec-prd`');
+    expect(decision.message).toContain('不是新的任务授权');
+  });
+
+  test('Stop 再次触发时允许如实报告未完成项并等待用户', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd() }] }], { stop_hook_active: true });
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test('其他会话或 CLI 改写后的内容不归入本回合', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd() }] }]);
+    write(path.join(root, relative), readyPrd().replace('Body v1', '另一个会话的修改'));
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test('失败的写入不算已完成的当前任务变更', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd(), failed: true }] }]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test('元消息既不是新用户授权，也不清除本回合的写入归属', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd() }], meta: 'Stop hook feedback' }]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(true);
+  });
+
+  test('会话标识不匹配时不接管 transcript', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd() }] }], { session_id: 'session-b' });
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test.each(['{broken', '{}\n', ''])('损坏或未知记录格式只降级提醒，不扩大任务', (text) => {
+    const payload = transcriptPayload(root, [{}]);
+    write(payload.transcript_path, text);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test.each(['Edit', 'MultiEdit'])('%s 用成功工具回执重建实际写入内容', (tool) => {
+    const before = readyPrd().replace('Body v1', '修改前');
+    const payload = transcriptPayload(root, [{ writes: [{
+      tool,
+      input: tool === 'Edit'
+        ? { file_path: relative, old_string: '修改前', new_string: 'Body v1' }
+        : { file_path: relative, edits: [{ old_string: '修改前', new_string: 'Body v1' }] },
+      result: { originalFile: before },
+    }] }]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(true);
+  });
+
+  test.each(['Write', 'Edit'])('%s 回执为 LF 而 Windows 实际写入 CRLF 时仍保留归属', (tool) => {
+    const payload = transcriptPayload(root, [{ writes: [{
+      tool,
+      ...(tool === 'Write' ? { path: relative, content: readyPrd() } : {
+        input: { file_path: relative, old_string: '修改前', new_string: 'Body v1' },
+        result: { originalFile: readyPrd().replace('Body v1', '修改前') },
+      }),
+    }] }]);
+    write(path.join(root, relative), readyPrd().replace(/\n/g, '\r\n'));
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(true);
+  });
+
+  test('Edit 缺少原始内容回执时不猜测整个文件的归属', () => {
+    const payload = transcriptPayload(root, [{ writes: [{ tool: 'Edit', input: {
+      file_path: relative, old_string: '旧内容', new_string: 'Body v1',
+    } }] }]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test('不向无关正文或检查点文件追加 finalize 要求', () => {
+    const content = checkpointPrd();
+    write(path.join(root, relative), content);
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content }] }]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
+  });
+
+  test('当前写入的 ready PRD 通过 finalize 后正常结束', () => {
+    write(path.join(root, HOSTS[host].finalizeRelative), 'process.exit(0);\n');
+    const payload = transcriptPayload(root, [{ writes: [{ path: relative, content: readyPrd() }] }]);
+    expect(readinessDecision(host, runReadiness(host, root, payload)).blocked).toBe(false);
   });
 });

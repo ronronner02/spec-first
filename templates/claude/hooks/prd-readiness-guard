@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-// Cross-platform Stop PRD readiness guard. Claude Code invokes this in exec form
-// (`node .claude/hooks/prd-readiness-guard`), so it runs identically on macOS, Linux, and
-// Windows without a POSIX shell. Project dir comes from CLAUDE_PROJECT_DIR env / argv[2] /
-// cwd (see resolveProjectDir). The hook event payload arrives as JSON on stdin (unused here).
+// Stop 仅核验当前回合有成功写入证据的 PRD，不把共享工作区状态当作任务授权。
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
+const payload = parseJsonObject(readStdin());
+if (payload.stop_hook_active === true) process.exit(0);
 const projectDir = resolveProjectDir();
 const finalizeScript = path.join(
   projectDir,
@@ -20,18 +19,19 @@ const finalizeScript = path.join(
   'finalize-prd-artifact.js',
 );
 
-const prdScan = changedPrdArtifacts(projectDir);
-if (prdScan.error) {
-  block([
-    '[spec-first] PRD readiness guard blocked closeout.',
-    'Could not inspect changed PRD artifacts under docs/brainstorms.',
-    `reason_codes: ${prdScan.error.reasonCode}`,
-    '',
-    'Next action: rerun from a valid git worktree or fix git status before closing out ready/final PRD work.',
-  ].join('\n'));
+let prdScan;
+try {
+  const { inspectPrdSessionScope } = require(path.join(path.dirname(finalizeScript), 'lib', 'hook-session-scope.cjs'));
+  prdScan = inspectPrdSessionScope(payload, projectDir);
+} catch (_error) {
+  prdScan = { paths: [], reasonCode: 'prd_scope_runtime_unavailable' };
 }
-
-const prdPaths = prdScan.paths;
+if (prdScan.reasonCode && prdScan.paths.length === 0) {
+  const message = `PRD 归属检查已降级（${prdScan.reasonCode}）。保留原任务范围；本提示不是新的任务授权。真正交付 ready/final PRD 前仍须执行 producer-local finalize。`;
+  process.stdout.write(JSON.stringify({ systemMessage: message }));
+  process.exit(0);
+}
+const prdPaths = prdScan.paths.filter((entry) => isReadyClaimPrdArtifact(path.join(projectDir, entry)));
 if (prdPaths.length === 0) {
   process.exit(0);
 }
@@ -88,87 +88,18 @@ for (const relativePrdPath of prdPaths) {
 
 if (blocked.length > 0) {
   const lines = [
-    '[spec-first] PRD readiness guard blocked closeout.',
-    'Changed PRD artifacts that claim ready/final cannot close out until `spec-prd` producer-local finalize passes.',
-    'Do not repair this by only changing enum values to `final-prd`, deleting detailed requirements, or treating checker reason_codes as the workflow.',
-    'Choose the correct path: ask the next load-bearing owner question, preserve a non-ready checkpoint with `next_owner_question`, revise the PRD while keeping source/design gaps visible, or finalize only after all load-bearing gaps are closed and original inputs were scanned.',
-    '',
+    '当前回合写入的 PRD 有尚未通过校验的 ready/final 声明。',
+    '这不是新的任务授权，也不要求切换工作流。不要改动本任务之外的文件。',
     ...blocked.flatMap((entry) => [
       `- ${entry.path}`,
       `  reason_codes: ${entry.reasonCodes.join(', ')}`,
-      entry.stderr ? `  stderr: ${entry.stderr}` : '',
-    ].filter(Boolean)),
-    '',
-    'Next action: return to `spec-prd`, fix the listed readiness/design/grill/finalize gaps, then run the producer-local finalize path again.',
-    'Phase 1 restore point if grill was skipped: (1) emit a run-local Decision Card (write_mode / highest_risk_gap / next_action / why planning will not invent WHAT); (2) emit the Requirement Analysis Gate map; (3) begin Requirements Grill on each load-bearing branch before re-finalizing.',
-    'Legal enum values: write_mode = checkpoint-prd | final-prd | ask-owner-first | route-out; can_enter_spec_plan = yes | no; clarification_evidence = asked-owner | source-proven-no-ask | headless-degraded-logged; preflight_sweep_closure = closed | degraded | blocked.',
+    ]),
+    '仅在当前任务已授权完善 PRD 时继续修复并执行 producer-local finalize；否则如实说明未完成项并等待用户选择。',
+    '已经在询问或等待用户时直接结束；不要为了清除提醒而擅自修改需求。',
   ];
   block(lines.join('\n'));
 }
 
-function changedPrdArtifacts(cwd) {
-  const result = spawnSync('git', ['status', '--porcelain', '-z', '--untracked-files=all', '--', 'docs/brainstorms'], {
-    cwd,
-    encoding: 'utf8',
-    timeout: 2000,
-  });
-  if (result.status !== 0 || typeof result.stdout !== 'string') {
-    // Non-Git parent workspaces (multi-repo requirement folders) have no git index.
-    // Treat as "no changed PRD artifacts" so ordinary non-PRD turns can close.
-    // Real PRD work should run inside a child git repo where status failures still block.
-    const stderr = String(result.stderr || (result.error && result.error.message) || '');
-    if (/not a git repository/i.test(stderr) && hasChildGitRepo(cwd)) {
-      return { paths: [], error: null };
-    }
-    return {
-      paths: [],
-      error: {
-        reasonCode: result.status === null || (result.signal && result.signal !== null)
-          ? 'git_status_timeout'
-          : 'git_status_unavailable',
-      },
-    };
-  }
-
-  const entries = result.stdout.split('\0').filter(Boolean);
-  const paths = [];
-  for (let i = 0; i < entries.length; i += 1) {
-    const entry = entries[i];
-    const status = entry.slice(0, 2);
-    const filePath = entry.slice(3);
-    if (status.includes('R') || status.includes('C')) {
-      i += 1;
-    }
-    if (/^docs\/brainstorms\/.+-requirements\.md$/.test(filePath)
-      && isReadyClaimPrdArtifact(path.join(cwd, filePath))) {
-      paths.push(filePath);
-    }
-  }
-  return {
-    paths: [...new Set(paths)].sort(),
-    error: null,
-  };
-}
-
-function hasChildGitRepo(cwd) {
-  try {
-    return fs.readdirSync(cwd, { withFileTypes: true }).some((entry) => {
-      if (!entry.isDirectory() || entry.isSymbolicLink()) return false;
-      try {
-        const marker = fs.lstatSync(path.join(cwd, entry.name, '.git'));
-        return marker.isDirectory() || marker.isFile();
-      } catch (_error) {
-        return false;
-      }
-    });
-  } catch (_error) {
-    return false;
-  }
-}
-
-// docs/brainstorms/*-requirements.md 同时承载 spec-brainstorm 的需求 brief 与
-// spec-prd 的 PRD-grade 需求,仅凭路径无法区分。Stop hook 只守 ready/final 出口:
-// 普通 draft/checkpoint PRD 不应在多会话共享 checkout 时阻断其他会话 closeout。
 function isReadyClaimPrdArtifact(absolutePath) {
   let content;
   try {
@@ -176,7 +107,7 @@ function isReadyClaimPrdArtifact(absolutePath) {
   } catch {
     return false;
   }
-  if (!/^\s*artifact_kind:\s*prd-requirements\s*$/im.test(content)) {
+  if (frontmatterFieldValue(content, 'artifact_kind') !== 'prd-requirements') {
     return false;
   }
 
@@ -290,4 +221,8 @@ function parseJsonObject(raw) {
   } catch {
     return {};
   }
+}
+
+function readStdin() {
+  try { return fs.readFileSync(0, 'utf8'); } catch (_error) { return ''; }
 }
