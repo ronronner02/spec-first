@@ -258,7 +258,7 @@ Before creating PR, verify:
 - [ ] PR description includes Post-Deploy Monitoring & Validation section (or explicit no-impact rationale) when a PR was authorized
 - [ ] Simplify: `spec-simplify-code` when diff >=30 lines (or skipped with reason)
 - [ ] Code review: `spec-code-review` ran (self-sized), or skipped (mechanical diff / unavailable — noted in summary); residuals handled via the Residual Work Gate
-- [ ] Authorized PR description includes summary, testing notes, evidence when captured, and accurate attribution
+- [ ] Authorized PR description includes summary, testing notes, and evidence when captured, without unsolicited tool or agent attribution
 
 ## Code Review
 

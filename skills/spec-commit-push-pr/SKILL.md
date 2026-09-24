@@ -200,7 +200,7 @@ When evidence would not change reviewer confidence (inert documentation, changel
 - Gate **on** -- judge concept novelty and compose the section per Step B2 of the reference. The gate is single: when it is off, skip judgment, the section, Step 8 trailer and offer, and archival entirely.
 - Gate **off** -- compose the description without any concept handling.
 
-**Compose the title and body.** Continue with Steps A through H from the already-loaded reference (commit classification, evidence handling, concept judgment when the gate is on, narrative framing, sizing, writing voice and principles, visual communication, title format, body assembly, the plain-text Spec-First footer, and the compression pass). For an existing PR, the current body was already read in Pre-A.
+**Compose the title and body.** Continue with Steps A through H from the already-loaded reference (commit classification, evidence handling, concept judgment when the gate is on, narrative framing, sizing, writing voice and principles, visual communication, title format, body assembly, and the compression pass). For an existing PR, the current body was already read in Pre-A.
 
 ### Step 7: Create or update the PR
 

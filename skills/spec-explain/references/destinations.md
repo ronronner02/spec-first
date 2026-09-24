@@ -10,7 +10,7 @@ Artifact surfaces wrap published content in their own document skeleton (doctype
 
 1. Re-emit the explainer as **body-only markup**: strip the doctype/`<html>`/`<head>`/`<body>` shell; keep the content elements.
 2. Keep all CSS inline (a `<style>` element at the top of the fragment is acceptable); no external font links, no external images — the explainer's no-external-request invariant already guarantees this.
-3. Keep the visible metadata header and composition footer in the fragment — they are part of the artifact.
+3. Keep the visible metadata header in the fragment — it is part of the artifact.
 4. Publish, confirm the returned URL/reference to the user.
 
 The run-dir file remains the complete standalone document; the fragment is a re-emission, not a replacement.

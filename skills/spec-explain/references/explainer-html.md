@@ -12,7 +12,6 @@ How an explainer renders as HTML. Load at compose time (Phase 4), not earlier. T
   run ids, authorization tokens, provider/model receipts, or machine-specific
   identifiers in the explainer body. The delivery path stays outside the
   teaching artifact.
-- **Composition signal.** A visible footer names the composition timestamp and the composing skill: `Composed 2026-07-02 by spec-explain`.
 
 ## Show-n-tell: match the form to the material
 

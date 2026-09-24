@@ -36,7 +36,9 @@ describe('pipeline mode contracts', () => {
     expect(writingReference).toContain('## New concepts');
     expect(writingReference).toContain('Check each candidate against the base ref, never the working tree');
     expect(writingReference).toContain('Description-only and description-update runs never write repo files.');
-    expect(writingReference).toMatch(/New concepts section[\s\S]*Evidence block[\s\S]*Spec-First footer/);
+    expect(writingReference).toMatch(/New concepts section[\s\S]*Evidence block/);
+    expect(writingReference).not.toContain('Spec-First footer');
+    expect(writingReference).toContain('unless the current user explicitly requests the exact attribution in the current turn');
     expect(writingReference).not.toContain('img.shields.io');
     expect(writingReference).not.toContain('MODEL_SLUG');
     expect(skill).not.toContain('/ce-explain');
