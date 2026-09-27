@@ -1640,6 +1640,30 @@ describe('Graphify provider', () => {
     });
   });
 
+  test('Codex Windows Graphify hook 使用调用运算符并保留非 Windows 命令', () => {
+    const provider = require('../../skills/spec-runtime-setup/scripts/providers/graphify.cjs');
+    const target = tempRepo('graphify-codex-windows-command');
+    const launcher = "C:\\Users\\O'Brien\\Local Tools\\graphify.exe";
+    const hookFile = path.join(target, '.codex', 'hooks.json');
+    fs.mkdirSync(path.dirname(hookFile), { recursive: true });
+    const userHook = { type: 'command', command: 'node user-hook.js', commandWindows: 'node custom.js' };
+    fs.writeFileSync(hookFile, JSON.stringify({ hooks: {
+      PreToolUse: [{ matcher: 'Bash', hooks: [
+        { type: 'command', command: '/old/graphify hook-check' },
+        { type: 'command', command: '/old/graphify hook-guard read' }, userHook,
+      ] }],
+    } }));
+    provider.normalizePythonHostIntegration(target, 'codex', { graphifyCommand: launcher });
+    const hooks = JSON.parse(fs.readFileSync(hookFile, 'utf8')).hooks.PreToolUse[0].hooks;
+    expect(hooks[0].commandWindows).toBe("& 'C:\\Users\\O''Brien\\Local Tools\\graphify.exe' hook-check");
+    expect(hooks[1].commandWindows).toBe("& 'C:\\Users\\O''Brien\\Local Tools\\graphify.exe' hook-guard read");
+    expect(hooks[0].command).not.toContain('& ');
+    expect(hooks[2]).toEqual(userHook);
+    const before = fs.readFileSync(hookFile, 'utf8');
+    provider.normalizePythonHostIntegration(target, 'codex', { graphifyCommand: launcher });
+    expect(fs.readFileSync(hookFile, 'utf8')).toBe(before);
+  });
+
   test('accepts graphifyy 0.9.12 Claude dual hook-guard entries and rewrites only the launcher', () => {
     const provider = require('../../skills/spec-runtime-setup/scripts/providers/graphify.cjs');
     const target = tempRepo('graphify-python-claude-hook-guard');

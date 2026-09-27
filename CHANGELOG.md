@@ -1,5 +1,7 @@
 # Changelog
 
+- v1.15.3 2026-09-27 12:46:00 kiro: fix(codex): 修正 Windows SessionStart 的字符串路径误执行，改为显式 `node .codex/hooks/session-start`；Graphify 的 Codex hook 增加 PowerShell `commandWindows` 调用运算符与单引号转义，保留其他宿主命令及用户 hook。复用既有回归测试并隔离 Windows 测试的 `HOME`、`USERPROFILE`、`CODEX_HOME`，避免改动全局配置。验证及已知 Windows 文件符号链接权限限制见 `docs/validation/2026-09-27-codex-windows-hooks.md`。 (user-visible)
+
 - v1.15.3 2026-09-07 16:20:00 leokuang: docs(readme): 三个 README 徽章行新增官网徽章（website spec-first.cn）；GitHub 仓库 description 优化为一句话价值主张（可治理、可验证、可沉淀的工程闭环），topics 由 7 个扩至 19 个（补 claude-code/cursor/kiro/qoder/opencode/zcode/llm/ai-agent/ai-programming/developer-tools/cli/spec-driven-development）。仅文档与仓库元数据变更。
 
 - v1.15.3 2026-09-07 16:00:00 leokuang: docs(readme): 三个 README 变体中的仓库链接统一由旧地址 `github.com/sunrain520/spec-first` 改为现址 `github.com/leo-kuang-ai/spec-first`（CI/node/license 徽章、Issues、用户手册与文档深链，共 21 处）；CI 徽章引用的 `npm-install-matrix.yml` 在现仓库存在，链接继续有效。同时设置 GitHub 仓库 homepage 为 spec-first.cn 并更新 description。仅文档与仓库元数据变更。

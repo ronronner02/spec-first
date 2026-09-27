@@ -31,7 +31,7 @@ function tempSandbox(platform) {
 function runSpecFirst(args, sandbox) {
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: sandbox.projectRoot,
-    env: { ...process.env, HOME: sandbox.home },
+    env: { ...process.env, HOME: sandbox.home, USERPROFILE: sandbox.home, CODEX_HOME: path.join(sandbox.home, '.codex') },
     encoding: 'utf8',
     timeout: 120000,
   });
@@ -559,6 +559,8 @@ describe('six-host init lifecycle', () => {
       env: {
         ...process.env,
         HOME: sandbox.home,
+        USERPROFILE: sandbox.home,
+        CODEX_HOME: path.join(sandbox.home, '.codex'),
         PATH: emptyBin,
       },
       encoding: 'utf8',
@@ -594,10 +596,10 @@ describe('six-host init lifecycle', () => {
     expect(managedHook).toMatchObject({
       type: 'command',
       command: 'node .codex/hooks/session-start',
-      commandWindows: '".codex\\hooks\\session-start.cmd"',
+      commandWindows: 'node .codex/hooks/session-start',
     });
 
-    const movedProjectRoot = path.join(path.dirname(sandbox.projectRoot), 'moved-project');
+    const movedProjectRoot = path.join(path.dirname(sandbox.projectRoot), 'moved project');
     fs.renameSync(sandbox.projectRoot, movedProjectRoot);
     const emptyBin = path.join(sandbox.home, 'empty-bin');
     fs.mkdirSync(emptyBin, { recursive: true });
@@ -607,6 +609,8 @@ describe('six-host init lifecycle', () => {
       env: {
         ...process.env,
         HOME: sandbox.home,
+        USERPROFILE: sandbox.home,
+        CODEX_HOME: path.join(sandbox.home, '.codex'),
         PATH: emptyBin,
         CODEX_PROJECT_DIR: movedProjectRoot,
       },
@@ -617,6 +621,21 @@ describe('six-host init lifecycle', () => {
     expect(JSON.parse(hook.stdout).hookSpecificOutput.additionalContext).toContain(
       'Workflow entry governance is active',
     );
+    if (process.platform === 'win32') {
+      // 必须执行注册命令，直接调用 node 会掩盖 PowerShell 只打印路径的问题。
+      const registeredHook = spawnSync('powershell.exe', [
+        '-NoProfile', '-NonInteractive', '-Command', managedHook.commandWindows,
+      ], {
+        cwd: movedProjectRoot,
+        input: '{}',
+        env: { ...process.env, HOME: sandbox.home, USERPROFILE: sandbox.home, CODEX_HOME: path.join(sandbox.home, '.codex'), CODEX_PROJECT_DIR: movedProjectRoot },
+        encoding: 'utf8',
+        timeout: 15000,
+      });
+      expect(registeredHook.status).toBe(0);
+      expect(JSON.parse(registeredHook.stdout).hookSpecificOutput.hookEventName).toBe('SessionStart');
+    }
+
   }, 120000);
 
   test.each(pointerPlatforms)(

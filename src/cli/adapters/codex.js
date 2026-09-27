@@ -696,7 +696,8 @@ function formatSessionStartCommand() {
 }
 
 function formatWindowsSessionStartCommand() {
-  return '".codex\\hooks\\session-start.cmd"';
+  // PowerShell 会把单独的带引号路径当作字符串，显式调用 node 才会执行脚本。
+  return formatSessionStartCommand();
 }
 
 function isManagedSessionStartHook(hook, projectRoot) {

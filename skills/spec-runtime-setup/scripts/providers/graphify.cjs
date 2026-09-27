@@ -2021,7 +2021,8 @@ function graphifySafetyError(reasonCode, message) {
 }
 
 function normalizePythonHostIntegration(repoRoot, host, runtimeContext) {
-  if (!runtimeContext.graphifyCommand || !path.isAbsolute(runtimeContext.graphifyCommand)) {
+  if (!runtimeContext.graphifyCommand
+    || !(path.isAbsolute(runtimeContext.graphifyCommand) || path.win32.isAbsolute(runtimeContext.graphifyCommand))) {
     throw graphifySafetyError('graphify-host-launcher-ambiguous', 'Host integration 需要 verified absolute Graphify launcher。');
   }
   if (host === 'claude' || host === 'codex') normalizeGraphifyInstructionSection(repoRoot, host);
@@ -2046,7 +2047,7 @@ function normalizePythonHostIntegration(repoRoot, host, runtimeContext) {
     claude: '.claude/settings.json',
     codex: '.codex/hooks.json',
   }[host];
-  if (configPath) normalizePythonHostHookConfig(repoRoot, path.join(repoRoot, configPath), runtimeContext.graphifyCommand);
+  if (configPath) normalizePythonHostHookConfig(repoRoot, path.join(repoRoot, configPath), runtimeContext.graphifyCommand, host);
 }
 
 function providerOwnedTextFiles(repoRoot, directory) {
@@ -2073,7 +2074,7 @@ function providerOwnedTextFiles(repoRoot, directory) {
 const GRAPHIFY_HOST_HOOK_VERBS = new Set(['hook-check', 'hook-guard']);
 const GRAPHIFY_HOST_HOOK_GUARD_MODES = new Set(['search', 'read']);
 
-function normalizePythonHostHookConfig(repoRoot, target, launcher) {
+function normalizePythonHostHookConfig(repoRoot, target, launcher, host) {
   if (!fs.existsSync(target)) throw graphifySafetyError('graphify-host-hook-config-missing', `缺少 ${relativeRef(repoRoot, target)}。`);
   assertContainedPath(repoRoot, target, { reasonCode: 'graphify-project-surface-symlink-escape' });
   let parsed;
@@ -2083,19 +2084,25 @@ function normalizePythonHostHookConfig(repoRoot, target, launcher) {
     throw graphifySafetyError('graphify-host-hook-config-invalid', `${relativeRef(repoRoot, target)} 不是合法 JSON。`);
   }
   let matches = 0;
-  const visit = (value, key = null) => {
+  const visit = (value) => {
     if (Array.isArray(value)) return value.map((child) => visit(child));
-    if (value && typeof value === 'object') {
-      return Object.fromEntries(Object.entries(value).map(([childKey, child]) => [childKey, visit(child, childKey)]));
-    }
-    if (key !== 'command' || typeof value !== 'string') return value;
-    if (!/\bhook-(?:check|guard)\b/.test(value)) return value;
-    const parsedCommand = parseGraphifyHostHookCommand(value);
+    if (!value || typeof value !== 'object') return value;
+    const normalized = Object.fromEntries(Object.entries(value).map(([key, child]) => [key, visit(child)]));
+    if (typeof value.command !== 'string' || !/\bhook-(?:check|guard)\b/.test(value.command)) return normalized;
+    const parsedCommand = parseGraphifyHostHookCommand(value.command);
     if (!parsedCommand || !isGraphifyLauncherBasename(parsedCommand.launcher)) {
-      throw graphifySafetyError('graphify-host-hook-command-unexpected', `拒绝修改 unexpected Graphify host hook command：${value}`);
+      throw graphifySafetyError('graphify-host-hook-command-unexpected', `Graphify host hook 命令格式异常：${value.command}`);
     }
     matches += 1;
-    return renderGraphifyHostHookCommand(launcher, parsedCommand.verb, parsedCommand.mode);
+    normalized.command = renderGraphifyHostHookCommand(launcher, parsedCommand.verb, parsedCommand.mode);
+    if (host === 'codex' && path.win32.isAbsolute(launcher)
+      && (process.platform === 'win32' || !path.isAbsolute(launcher))) {
+      // Codex 使用 PowerShell；带引号的程序路径需要调用运算符。
+      const quoted = String(launcher).replaceAll("'", "''");
+      const suffix = parsedCommand.mode ? ` ${parsedCommand.mode}` : '';
+      normalized.commandWindows = `& '${quoted}' ${parsedCommand.verb}${suffix}`;
+    }
+    return normalized;
   };
   const normalized = { ...parsed, hooks: visit(parsed.hooks) };
   if (matches < 1) {
@@ -2140,11 +2147,11 @@ function isGraphifyLauncherBasename(commandLauncher) {
 // Supports: `… hook-check` and `… hook-guard <search|read>` (graphifyy 0.9.12+).
 function parseGraphifyHostHookCommand(command) {
   const match = String(command).match(
-    /^(?:'([^']*)'|"((?:[^"\\]|\\.)*)"|(\S+))\s+(hook-check|hook-guard)(?:\s+(\S+))?$/,
+    /^(?:'((?:[^']|'\\'')*)'|"((?:[^"\\]|\\.)*)"|(\S+))\s+(hook-check|hook-guard)(?:\s+(\S+))?$/,
   );
   if (!match) return null;
   const launcher = match[1] !== undefined
-    ? match[1]
+    ? match[1].replaceAll("'\\''", "'")
     : (match[2] !== undefined ? match[2].replace(/\\(["\\])/g, '$1') : match[3]);
   const verb = match[4];
   if (!GRAPHIFY_HOST_HOOK_VERBS.has(verb)) return null;
