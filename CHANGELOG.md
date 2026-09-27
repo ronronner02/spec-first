@@ -1,5 +1,7 @@
 # Changelog
 
+- v1.15.3 2026-09-27 14:34:39 kiro: fix(outputs): 移除 PR 自动品牌页脚与浏览器验收报告工具署名；初始化 CHANGELOG 仅生成通用记录格式，不再插入工具作者、版本和安装记录。公共入口明确业务产物归属，保留用户内容、技术证据、运行标记和版权许可；补充跨宿主与输出模板回归，验证范围见 `docs/validation/2026-09-27-unbranded-output.md`。 (user-visible)
+
 - v1.15.3 2026-09-27 12:46:00 kiro: fix(codex): 修正 Windows SessionStart 的字符串路径误执行，改为显式 `node .codex/hooks/session-start`；Graphify 的 Codex hook 增加 PowerShell `commandWindows` 调用运算符与单引号转义，保留其他宿主命令及用户 hook。复用既有回归测试并隔离 Windows 测试的 `HOME`、`USERPROFILE`、`CODEX_HOME`，避免改动全局配置。验证及已知 Windows 文件符号链接权限限制见 `docs/validation/2026-09-27-codex-windows-hooks.md`。 (user-visible)
 
 - v1.15.3 2026-09-07 16:20:00 leokuang: docs(readme): 三个 README 徽章行新增官网徽章（website spec-first.cn）；GitHub 仓库 description 优化为一句话价值主张（可治理、可验证、可沉淀的工程闭环），topics 由 7 个扩至 19 个（补 claude-code/cursor/kiro/qoder/opencode/zcode/llm/ai-agent/ai-programming/developer-tools/cli/spec-driven-development）。仅文档与仓库元数据变更。

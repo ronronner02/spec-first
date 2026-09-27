@@ -130,7 +130,7 @@ Classify files by runtime purpose, not extension. Markdown or YAML may be inert 
 1. **Existing PR body contains a `## Demo` or `## Screenshots` section with image embeds:** preserve it verbatim unless the user's focus asks to refresh or remove it. Include the preserved block in the body.
 2. **No existing evidence block:** omit the evidence section entirely unless the caller already captured evidence and passed it in.
 
-Do not label test output as "Demo" or "Screenshots". Place any preserved evidence block before the Spec-First footer.
+Do not label test output as "Demo" or "Screenshots". 将保留的证据块放在正文的业务说明之后，不追加工具署名页脚。
 
 ---
 
@@ -315,17 +315,7 @@ Assemble the body in this order:
 3. **Test plan** -- only when non-obvious per the writing principles. Omit otherwise.
 4. **New concepts section** -- only when Step B2 produced one or preserved one from the existing PR body.
 5. **Evidence block** -- only the preserved or freshly captured block from Step B, if one exists. Do not fabricate or placeholder.
-6. **Spec-First footer** -- append the plain-text footer separated by a `---` rule. Skip if regenerating an existing body that already contains the footer.
-
-**Footer:**
-
-```markdown
----
-
-Built with [Spec-First](https://github.com/sunrain520/spec-first)
-```
-
-The footer contains no externally loaded image and does not publish the harness or model slug. The repository link is navigated only when a reader chooses it; rendering the PR body makes no third-party image request.
+6. **产物归属** -- 默认不追加工具或框架的署名、徽章、宣传链接或共同作者标记。重写已有正文时，只移除可明确识别且在本次授权范围内的自动品牌页脚；保留业务相关的依赖、来源、验证证据及版权、许可证。
 
 ---
 
@@ -345,7 +335,7 @@ Then apply these cuts:
 - If a "Review" or process-oriented section lists how to review, remove it. Move any truly non-obvious review hints inline with the relevant change.
 - If the body has 5+ H3 subsections that each describe one mechanism, consolidate them into a single table row per mechanism under one header. Reserve prose H3 callouts for 2-3 genuine design decisions.
 - If the body exceeds the sizing-table target by more than 30%, compress the longest non-Summary section by half.
-- If any other sentence or section can be cut without lowering reviewer confidence, cut it. Do not remove required footer content or a required `## New concepts` section solely to shorten the narrative.
+- If any other sentence or section can be cut without lowering reviewer confidence, cut it. 不得仅为压缩篇幅移除必需的来源、验证证据、版权许可或 `## New concepts` 内容。
 
 **Value-lead check.** Re-read the first sentence of the Summary. If it describes what was moved around, renamed, or added ("This PR introduces three-tier autofix..."), rewrite to lead with what's now possible or what was broken and is now fixed ("Document reviews previously produced 14+ findings requiring user judgment; this PR cuts that to 4-6.").
 

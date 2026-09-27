@@ -252,7 +252,8 @@ describe('six-host init lifecycle', () => {
         path.join(sandbox.projectRoot, 'CHANGELOG.md'),
         'utf8',
       );
-      expect(changelog).toContain('使用 spec-first 初始化项目');
+      expect(changelog).toContain('# Changelog');
+      expect(changelog).not.toMatch(/spec-first|^- v\d+\.\d+\.\d+ /mi);
 
       if (adapter.pointerPath) {
         const pointer = fs.readFileSync(

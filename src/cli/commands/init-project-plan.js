@@ -14,7 +14,6 @@ const {
   planBundledAssetSync,
 } = require('../plugin');
 const {
-  resolveChangelogAuthor,
   resolveDeveloperIdentity,
 } = require('../developer');
 const {
@@ -32,7 +31,7 @@ const {
 const { detectGlobalCodexHookPollution } = require('../adapters/codex');
 const { applyManagedBlock, buildManagedBlock } = require('../lang-policy');
 const { removeManagedCodingGuidelinesBlock } = require('../coding-guidelines');
-const { buildInitialChangelog, formatChangelogTimestamp } = require('../changelog');
+const { buildInitialChangelog } = require('../changelog');
 const { applySpecFirstGitignoreBlock } = require('../gitignore-policy');
 const {
   inspectInstructionBootstrap,
@@ -616,17 +615,10 @@ function buildInitMetadataPlan({
 
   const changelogPath = path.join(projectRoot, 'CHANGELOG.md');
   if (!fs.existsSync(changelogPath)) {
-    const changelogAuthor = resolveChangelogAuthor(projectRoot, {
-      platform,
-    });
     operations.push(buildPlanFileOperation(
       projectRoot,
       'CHANGELOG.md',
-      buildInitialChangelog(
-        formatChangelogTimestamp(new Date()),
-        changelogAuthor.name || developer.name,
-        developer.version,
-      ),
+      buildInitialChangelog(),
       'bootstrap_changelog',
     ));
   }

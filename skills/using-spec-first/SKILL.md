@@ -35,6 +35,12 @@ Next action: <one action the user can take now>
 
 Use the repository's configured user language. **Checkpoint — wait:** after any recommendation, stop and yield; enter the recommended entrypoint only after the user asks to continue.
 
+## 业务产物归属
+
+代码、注释、业务文档、CHANGELOG、提交信息和 PR 正文属于用户项目；默认不追加本工具或上游项目的品牌署名、宣传链接、徽章、自动生成水印或工具共同作者信息，也不将工具安装与版本升级写成业务变更。
+
+与任务直接相关的真实依赖、技术说明、来源和验证证据可以保留。运行所需的管理标记、路径、命令及版权、许可证不因去除自动署名而删改。清理已有内容仅限当前用户授权范围内、可明确识别的自动品牌署名；不以工具名称为依据批量删除用户内容。
+
 ## Exit Boundaries
 
 Hard exit gates cover mutation, verification claims, source/runtime, handoff/context reset, and knowledge promotion. A route match never authorizes an exit. Never claim verification or completion without traceable evidence, and never fabricate tests, refreshes, evals, or routing evidence. Modify source-of-truth surfaces, never generated host runtime; scripts/tools prepare deterministic facts while LLMs judge semantic adequacy.
