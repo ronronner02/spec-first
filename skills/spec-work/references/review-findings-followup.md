@@ -78,6 +78,12 @@ Default to applying every actionable finding. Applying is a reversible edit to a
 
 There is no precondition safety checklist and no deny-list — a code-review fix is a reversible edit, so downside is controlled after the fact (diff review + tests + the commit checkpoint), not by gating the apply.
 
+### Verify Before Accepting (No Performative Agreement)
+
+- Never use performative agreement ("You're absolutely right!", blind acceptance) or treat reviewer prose as automatic truth.
+- Before applying or pushing back, verify the finding against the actual `file:line`, surrounding callers, project invariants, and tests.
+- When pushing back (`skip` / `not-addressing`), cite concrete source or test evidence explaining why the finding does not hold or would introduce harm.
+
 **Evidence still matches the code** — the fix subagent confirms at `file:line` before editing. The orchestrator does **not** open files just to decide eligibility or dispatch.
 
 ## What to defer (to the Residual Work Gate)

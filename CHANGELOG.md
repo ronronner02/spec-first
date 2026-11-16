@@ -1,5 +1,7 @@
 # Changelog
 
+- v1.15.3 2026-11-16: feat(skills): 融合 Superpowers 执行纪律并新增只读会话取证技能 `spec-diagnose`——在 `spec-plan`、`spec-write-tasks`、`spec-work`、`spec-code-review` 与 `spec-resolve-pr-feedback` 中补入 `Global Constraints`/`Review Focus` 透传、任务 right-sizing、`Rulings, not stalls` 范围守恒裁决、Diff-Packet 评审边界与“先核验代码现实、禁止迎合式回复”纪律；新增 `spec-diagnose`（7 维度只读取证与上文前脱敏）并在 `src/cli/lang-policy.js` 与 `public-route-map.md` 明确与 `spec-debug` 的路由优先级；修复 `scripts/generate-runtime-capability-catalog.js` 在 Windows/CRLF 下的换行与 POSIX 路径归一化，重新生成 `docs/catalog/runtime-capabilities.md` 并同步 `ce-localization-review-contracts` / `doctor-runtime-assets` 计数。 (user-visible)
+
 - v1.15.3 2026-09-27 14:34:39 kiro: fix(outputs): 移除 PR 自动品牌页脚与浏览器验收报告工具署名；初始化 CHANGELOG 仅生成通用记录格式，不再插入工具作者、版本和安装记录。公共入口明确业务产物归属，保留用户内容、技术证据、运行标记和版权许可；补充跨宿主与输出模板回归，验证范围见 `docs/validation/2026-09-27-unbranded-output.md`。 (user-visible)
 
 - v1.15.3 2026-09-27 12:46:00 kiro: fix(codex): 修正 Windows SessionStart 的字符串路径误执行，改为显式 `node .codex/hooks/session-start`；Graphify 的 Codex hook 增加 PowerShell `commandWindows` 调用运算符与单引号转义，保留其他宿主命令及用户 hook。复用既有回归测试并隔离 Windows 测试的 `HOME`、`USERPROFILE`、`CODEX_HOME`，避免改动全局配置。验证及已知 Windows 文件符号链接权限限制见 `docs/validation/2026-09-27-codex-windows-hooks.md`。 (user-visible)

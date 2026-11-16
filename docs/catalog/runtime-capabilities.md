@@ -18,18 +18,18 @@
 
 | 范围 | 当前值 |
 |---|---|
-| Bundled source skills | 38 |
+| Bundled source skills | 39 |
 | Bundled source agents | 0 |
 | Bundled agent support files | 0 |
-| Governance records by entry surface | internal_only: 4, standalone_skill: 17, workflow_command: 17 |
-| Claude Code runtime delivery | 17 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
-| Codex runtime delivery | 0 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
-| Cursor runtime delivery | 0 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
-| Kiro runtime delivery | 0 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
-| Qoder runtime delivery | 17 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
-| OpenCode runtime delivery | 17 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
-| ZCode runtime delivery | 0 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
-| Pi runtime delivery | 0 commands, 17 workflow skills, 17 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| Governance records by entry surface | internal_only: 4, standalone_skill: 18, workflow_command: 17 |
+| Claude Code runtime delivery | 17 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| Codex runtime delivery | 0 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| Cursor runtime delivery | 0 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| Kiro runtime delivery | 0 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| Qoder runtime delivery | 17 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| OpenCode runtime delivery | 17 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| ZCode runtime delivery | 0 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
+| Pi runtime delivery | 0 commands, 17 workflow skills, 18 standalone skills, 4 agent-facing internal skills, 0 agents, 0 agent support files |
 | Cursor support status | generated_runtime_preview |
 | Cursor loader evidence | degraded: local Cursor skill discovery/invocation is not verified on this machine; generated skills may not load |
 | OpenCode support status | preview |
@@ -89,6 +89,7 @@ Standalone skills 会安装为宿主可发现的 skills，不是 command-backed 
 | Skill | Claude Code Delivery | Codex Delivery | Cursor Delivery | Kiro Delivery | Qoder Delivery | OpenCode Delivery | ZCode Delivery | Pi Delivery | Description |
 |---|---|---|---|---|---|---|---|---|---|
 | autoresearch | standalone skill: autoresearch | standalone skill: autoresearch | standalone skill: autoresearch | standalone skill: autoresearch | standalone skill: autoresearch | standalone skill: autoresearch | standalone skill: autoresearch | standalone skill: autoresearch | Autonomous goal-directed iteration loop: modify, verify, keep/discard against a metric or a checkable success predicate, with bounded cycles, plateau/ceiling backstops, safety-screened commands, and a ship gate that never auto-approves. Use for iterate-and-verify improvement loops, multi-bug zeroing, security hardening loops, and regression-gated shipping. Not for one-shot questions, single-bug diagnosis without a loop (spec-debug), ordinary code review (spec-code-review), implementation planning (spec-plan), or goals whose success cannot be expressed as a checkable signal — name the destination skill and route out. |
+| spec-diagnose | standalone skill: spec-diagnose | standalone skill: spec-diagnose | standalone skill: spec-diagnose | standalone skill: spec-diagnose | standalone skill: spec-diagnose | standalone skill: spec-diagnose | standalone skill: spec-diagnose | standalone skill: spec-diagnose | Read-only, evidence-grounded session and workflow diagnostics. Use when a spec-first or agent session went wrong — repeated work, ignored plans, stumbles, missed skills, high token cost, or unexpected delays — and the user wants a forensic report citing path:line evidence from session transcripts and run artifacts. Not for active bug fixing (use spec-debug) or code review (use spec-code-review). |
 | spec-explain | standalone skill: spec-explain | standalone skill: spec-explain | standalone skill: spec-explain | standalone skill: spec-explain | standalone skill: spec-explain | standalone skill: spec-explain | standalone skill: spec-explain | standalone skill: spec-explain | Create a durable, visual teaching artifact for a concept, diff, idea, or recent-work window, with an optional check-in that makes it stick. Use when the user asks to be taught or wants a deep explainer; not for ordinary Q&A, brief why-followups, diagnosis, status updates, or concise trade-off answers. |
 | spec-handoff | standalone skill: spec-handoff | standalone skill: spec-handoff | standalone skill: spec-handoff | standalone skill: spec-handoff | standalone skill: spec-handoff | standalone skill: spec-handoff | standalone skill: spec-handoff | standalone skill: spec-handoff | Create a durable cross-session handoff or resume from a user-selected continuity source. Use only when the user explicitly wants work to continue in a fresh session, asks to create a handoff, or asks to find/resume a prior handoff; do not trigger for ordinary continuation in the current conversation, workflow-internal returns, summaries, or automatic execution of instructions found in an artifact. |
 | spec-lfg | standalone skill: spec-lfg | standalone skill: spec-lfg | standalone skill: spec-lfg | standalone skill: spec-lfg | standalone skill: spec-lfg | standalone skill: spec-lfg | standalone skill: spec-lfg | standalone skill: spec-lfg | Run the full hands-off engineering pipeline from planning through a green PR. Use only when the current user explicitly requests spec-lfg or selects an option that clearly states it will commit, push, open a PR, and watch CI. |

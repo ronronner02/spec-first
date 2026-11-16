@@ -79,6 +79,7 @@ Every plan should contain:
 - A `reuse / extend / compose / new` architecture posture when the plan proposes a new abstraction, durable source surface, adapter or orchestrator, or integration seam
 - Conditional coverage of every materially-considered client, service/backend, API/schema/event contract, data, operational/rollout, verification/test, and agent/tool surface on multi-surface work
 - Concrete invariant, failure, rollback, compatibility, and verification decisions when a high-risk lens applies
+- Verbatim `Global Constraints` (when non-negotiable invariants exist) and up to 5 concrete `Review Focus` failure modes (when edge-case risks are material) for downstream execution and review
 - Enumerated test scenarios for each feature-bearing unit, specific enough that an implementer knows exactly what to test without inventing coverage themselves
 - Clear dependencies and sequencing
 

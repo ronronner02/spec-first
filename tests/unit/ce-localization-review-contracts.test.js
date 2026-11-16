@@ -16,10 +16,11 @@ describe('CE localization deterministic review producer', () => {
       'check-spiral-auth.cjs',
     ].join('/');
 
-    expect(inventory.skill_count).toBe(38);
+    expect(inventory.skill_count).toBe(39);
     // 692 = 676 + spec-ideate/using-spec-first eval 资产与断言脚本进入 inventory 源集（2026-08-31 批次）
     // 1029 = 692 + autoresearch 收编为 canonical skill 源（2026-09-04 批次，01fad369，+337 包路径）
-    expect(inventory.package_path_count).toBe(1029);
+    // 1030 = 1029 + spec-diagnose/SKILL.md 新增为 canonical skill 源
+    expect(inventory.package_path_count).toBe(1030);
     expect(inventory.files).toContainEqual(expect.objectContaining({
       skill_id: 'spec-promote',
       owning_skill: 'spec-promote',
@@ -62,8 +63,10 @@ describe('CE localization deterministic review producer', () => {
     // is the pi adapter test file itself (its runtime-setup transform fixture's
     // frontmatter names that skill, incidentally matching the focused-test
     // relation); the adapter source file carries no relation of its own.
-    expect(coverage.coverage_summary.direct_support_unique_path_count).toBe(193);
-    expect(coverage.coverage_summary.direct_support_relation_count).toBe(407);
+    // 2026-11-16 (spec-diagnose): 193 -> 194 / 407 -> 413 after adding
+    // tests/unit/spec-diagnose-contracts.test.js
+    expect(coverage.coverage_summary.direct_support_unique_path_count).toBe(194);
+    expect(coverage.coverage_summary.direct_support_relation_count).toBe(413);
     expect(coverage.direct_support).toContainEqual(expect.objectContaining({
       skill_id: 'spec-promote',
       owning_skill: 'spec-promote',
