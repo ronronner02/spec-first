@@ -23,7 +23,7 @@ function readSkillDescription(skillName) {
   const skillPath = path.join(REPO_ROOT, 'skills', skillName, 'SKILL.md');
   if (!fs.existsSync(skillPath)) return '';
 
-  const content = fs.readFileSync(skillPath, 'utf8');
+  const content = fs.readFileSync(skillPath, 'utf8').replace(/\r\n/g, '\n');
   const frontmatter = content.match(/^---\n([\s\S]*?)\n---/);
   if (!frontmatter) return '';
 
@@ -83,7 +83,7 @@ function listWorkflowRuntimeContracts() {
 
       return {
         title: schema.title || fileName,
-        contractPath: path.relative(REPO_ROOT, absolutePath),
+        contractPath: path.relative(REPO_ROOT, absolutePath).replace(/\\/g, '/'),
         status: schema['x-spec-first-contract-status'] || '',
         producer: schema['x-spec-first-producer'] || '',
         producerAvailable: schema['x-spec-first-producer-available'] === true,
@@ -337,5 +337,6 @@ module.exports = {
   buildRuntimeCapabilityCatalog,
   listWorkflowRuntimeContracts,
   listPlannedRuntimeContracts,
+  readSkillDescription,
   writeRuntimeCapabilityCatalog,
 };

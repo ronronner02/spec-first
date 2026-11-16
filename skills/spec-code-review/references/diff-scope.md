@@ -13,6 +13,10 @@ Determine the diff to review using this priority order:
 
 The scope step in the SKILL.md handles discovery and passes you the resolved diff. You do not need to run git commands yourself unless PR scope mode requires it (below).
 
+## Diff-Packet Boundary
+
+Stay anchored to the provided diff, task-scoped bundle, and immediate surrounding callers. Do **not** wander across unrelated files in the repository unless you can name a concrete cross-module call, shared contract, or invariant risk that the diff touches. When `Global Constraints` or `Review Focus` are supplied by the plan or task context, check them explicitly against the diff.
+
 ## Remote scope (`pr-remote` and `branch-remote`)
 
 When the review context includes `<pr-scope-mode>pr-remote</pr-scope-mode>` or `<pr-scope-mode>branch-remote</pr-scope-mode>`, the working tree is **not** the reviewed head. Do **not** use Read/Grep on workspace paths for files in the changed-file list — they may not match the branch or PR under review.

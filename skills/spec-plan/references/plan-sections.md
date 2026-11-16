@@ -259,6 +259,17 @@ a section with placeholder prose is worse than omitting it.
   about edge cases. Skip when all requirements are unconditional and
   unambiguous.
 
+- **Global Constraints** — include when the Product Contract, host instructions,
+  or environment carry non-negotiable invariants (version floors, security or
+  privacy boundaries, naming/contract rules) that every downstream unit and
+  reviewer must obey. Copy them verbatim from the authoritative source so
+  downstream task splitting and review never drop them.
+
+- **Review Focus** — include when the spec implies high-probability edge-case
+  failure modes or input classes (up to 5 concrete scenarios) that unit-level
+  tests alone might miss. Downstream `spec-code-review` and task `review_focus`
+  use these directly.
+
 - **Documentation / Operational Notes** — include when documentation,
   monitoring, runbooks, or rollout steps need explicit notes. Skip when the
   work is purely internal and uses existing operational scaffolding without

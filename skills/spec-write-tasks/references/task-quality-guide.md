@@ -30,6 +30,11 @@ A task is high quality when an executor can:
 
 The quality bar is not whether every field is filled. The quality bar is whether an executor can safely begin with low context and finish a verifiable slice without expanding scope.
 
+### Task Right-Sizing & Inherited Guardrails
+
+- **Right-size by verification and review boundary:** each task should be the smallest vertical slice that runs one complete verification loop and warrants an independent review boundary. If a task cannot be verified independently or bundles unrelated concerns, split it; if splitting creates micro-steps that share the same verification loop, merge them.
+- **Inherit `Global Constraints` and `Review Focus` by reference:** when the source plan carries `Global Constraints` or `Review Focus`, point tasks to them via `context_refs` or `review_focus` instead of copying long prose into every task card.
+
 ## Task-ready Source Plan
 
 Source plan is task-ready when it has:

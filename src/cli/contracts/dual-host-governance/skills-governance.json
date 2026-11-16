@@ -37,6 +37,23 @@
       }
     },
     {
+      "skill_name": "spec-diagnose",
+      "entry_surface": "standalone_skill",
+      "command_name": null,
+      "host_scope": "dual_host",
+      "owner_host": null,
+      "host_delivery": {
+        "claude": "skill",
+        "codex": "skill",
+        "cursor": "skill",
+        "kiro": "skill",
+        "qoder": "skill",
+        "opencode": "skill",
+        "zcode": "skill",
+        "pi": "skill"
+      }
+    },
+    {
       "skill_name": "spec-commit",
       "entry_surface": "internal_only",
       "command_name": null,

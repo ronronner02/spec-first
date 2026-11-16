@@ -21,6 +21,7 @@ Read enough to decide the verdict, no more:
 - **Clear nit or clearly-valid finding** (typo, a bug the diff already shows, naming, a missing guard the comment pinpoints) -> the comment plus the line already in the diff is enough. Mark to fix.
 - **Contestable finding, or code that looks deliberate** (the finding asserts a bug where the code reads intentional, touches an invariant, or contradicts a nearby pattern) -> deep-read before accepting: open the referenced file, read the callers, check for the invariant or test that would make the reviewer wrong.
 - **Recover author intent before overriding deliberate-looking code.** Use `git log`, `git blame`, the PR description, and surrounding code when needed. Weigh the author's intent against the finding rather than assuming the reviewer saw more.
+- **No performative agreement.** Never open a reply with performative praise ("You're absolutely right!", "Great catch!") or blindly accept unverified claims; verify against actual `file:line` and tests, then either fix or push back with technical evidence.
 - **Dedup reads by file.** Multiple threads on the same file should be judged together after one source read.
 
 ## Cross-Item Reasoning
